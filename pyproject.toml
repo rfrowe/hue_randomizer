@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "randomizer"
+version = "0.1.0"
+description = "The Randomizer - Philips Hue light effect"
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.32.5"
+python-dotenv = "^1.2.1"
+urllib3 = "^2.5.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

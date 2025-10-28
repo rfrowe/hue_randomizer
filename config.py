@@ -1,0 +1,41 @@
+"""Configuration management for The Randomizer."""
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
+
+
+class Config:
+    """Configuration settings for the Hue Randomizer."""
+
+    # Bridge settings
+    HUE_BRIDGE_HOST = os.getenv('HUE_BRIDGE_HOST')
+    HUE_API_KEY = os.getenv('HUE_API_KEY')
+
+    # Effect settings
+    EFFECT_DURATION = int(os.getenv('EFFECT_DURATION', 10))
+    TRANSITION_TIME = int(os.getenv('TRANSITION_TIME', 0))
+
+    # API base URL
+    @property
+    def BASE_URL(self):
+        """Construct the base API URL."""
+        return f"https://{self.HUE_BRIDGE_HOST}/api/{self.HUE_API_KEY}"
+
+    def validate(self):
+        """Validate that all required settings are present."""
+        if not self.HUE_BRIDGE_HOST:
+            raise ValueError("HUE_BRIDGE_HOST not set in .env file")
+        if not self.HUE_API_KEY:
+            raise ValueError("HUE_API_KEY not set in .env file")
+        if self.EFFECT_DURATION <= 0:
+            raise ValueError("EFFECT_DURATION must be greater than 0")
+        if self.TRANSITION_TIME < 0:
+            raise ValueError("TRANSITION_TIME must be 0 or greater")
+
+
+# Global config instance
+config = Config()
