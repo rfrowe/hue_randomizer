@@ -19,11 +19,11 @@ class Config:
     EFFECT_DURATION = int(os.getenv('EFFECT_DURATION', 10))
     TRANSITION_TIME = int(os.getenv('TRANSITION_TIME', 0))
 
-    # API base URL
+    # API base URL (CLIP v2)
     @property
     def BASE_URL(self):
-        """Construct the base API URL."""
-        return f"https://{self.HUE_BRIDGE_HOST}/api/{self.HUE_API_KEY}"
+        """Construct the base API URL for CLIP v2."""
+        return f"https://{self.HUE_BRIDGE_HOST}/clip/v2"
 
     def validate(self):
         """Validate that all required settings are present."""

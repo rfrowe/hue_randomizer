@@ -79,32 +79,43 @@ Perfect for game nights, dramatic entrances, or just having fun with your smart 
 
 ## Usage
 
-### Basic Usage
-
-Run the effect on a room/zone:
-```bash
-poetry run python randomizer.py "Living Room"
-```
-
-### Custom Duration
-
-Run for a specific number of seconds:
-```bash
-poetry run python randomizer.py "Kitchen" 15
-```
-
-### Custom Brightness
-
-Set brightness as a percentage (great for nighttime!):
-```bash
-poetry run python randomizer.py "Bedroom" 10 10  # 10 seconds at 10% brightness
-```
-
 ### List Available Groups
 
-See all available rooms/zones:
+See all available rooms/zones with their IDs:
 ```bash
-poetry run python randomizer.py
+poetry run python randomizer.py --list
+```
+
+### Fast Mode (Recommended)
+
+Use zone or room ID directly for fastest startup:
+```bash
+# Using zone ID (fastest - skips lookups)
+poetry run python randomizer.py --zone "5a5f38bf-98b7-4d35-8cdf-40458deac02d" --duration 5 --brightness 100
+
+# Using room ID
+poetry run python randomizer.py --room "ROOM-UUID-HERE" --duration 10 --brightness 50
+```
+
+### Name-Based Usage
+
+Use group name (slower due to lookup):
+```bash
+poetry run python randomizer.py --group "Living Room" --duration 5 --brightness 100
+```
+
+### Default Duration and Brightness
+
+Duration defaults to config value, brightness defaults to 100%:
+```bash
+poetry run python randomizer.py --zone "ZONE-UUID"  # Uses config duration, 100% brightness
+```
+
+### macOS Shortcut
+
+For the fastest execution in Shortcuts, use:
+```bash
+cd /path/to/randomizer && poetry run python randomizer.py --zone "YOUR-ZONE-ID" --duration 5 --brightness 100
 ```
 
 ## Configuration
@@ -120,35 +131,41 @@ All configuration is managed through the `.env` file:
 
 ## How It Works
 
-1. **Discovery**: Queries the Hue Bridge for all lights in the specified group
-2. **State Capture**: Saves the original state of each light
-3. **Reachability Check**: Filters out unreachable/offline lights
-4. **Threaded Control**: Launches a thread for each light with:
-   - Random initial delay (0-2 seconds)
-   - Random alternating period (1.5-2.5 seconds)
-5. **Color Alternation**: Each light flashes between blue and yellow
-6. **Restoration**: All lights return to their original state
-7. **Verification**: Double-checks all lights were restored correctly
+1. **Group Lookup**: Finds the zone/room (or uses provided ID)
+2. **Batch State Fetch**: Gets all light states in a single API call
+3. **Instant Start**: Uses grouped_light API to set all lights to blue simultaneously
+4. **Desynchronized Effect**: Each thread:
+   - Waits random offset (0.1-2 seconds)
+   - Alternates between yellow and blue every 2 seconds
+   - Uses shared effect start time for accurate duration
+5. **Batch Restore**: If all lights had the same original state, restores in one API call
+6. **Individual Restore**: Falls back to per-light restoration if states differed
 
 ## Technical Details
 
-### Colors
-- **Blue**: Hue 46920 (65% of 65535), Saturation 254
-- **Yellow**: Hue 12750 (19% of 65535), Saturation 254
+### API Architecture
+- **CLIP v2 API**: Uses Philips Hue's modern REST API
+- **Shared Session**: Connection pooling for optimal performance
+- **Batch Operations**: grouped_light endpoint for instant start/restore
+- **Modular Design**: Separate API classes (`hue_api.py`) for reusability
 
-### Safety Features
-- 5-second HTTP request timeout (prevents hanging)
-- Automatic unreachable light detection and skipping
-- Graceful interrupt handling (Ctrl+C)
-- Thread cleanup with timeouts
-- Force restoration verification
-- Comprehensive error logging
+### Colors (XY Color Space)
+- **Blue**: XY (0.1691, 0.0441)
+- **Yellow**: XY (0.5, 0.5)
 
-### Performance
-- Handles 10+ lights simultaneously
-- Typical execution time: Duration + 2-3 seconds for setup/cleanup
-- Non-blocking threaded execution
-- Respects Hue Bridge rate limits (~10 commands/sec per light)
+### Performance Optimizations
+- Batch GET for all lights (1 API call vs 10+)
+- Batch PUT via grouped_light for instant synchronization
+- Connection reuse across all API clients
+- 2-second timeouts for fast fallback
+- Event-based waiting (no polling)
+- API call duration accounted for in timing
+
+### Timing
+- Fixed 2-second interval between color changes
+- Random 0.1-2s offset creates desynchronization
+- Effect duration accuracy: ±10%
+- Startup time with --zone: ~2-3 seconds
 
 ## Troubleshooting
 
