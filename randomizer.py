@@ -24,23 +24,14 @@ logger = logging.getLogger(__name__)
 # Disable SSL warnings for self-signed certificate
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# HTTP request timeout (seconds)
-REQUEST_TIMEOUT = 2  # Reduced from 5 to speed up fallback on wrong endpoint
-
-# Color definitions
+# Color definitions (hue/saturation for v1-style state dict)
 BLUE_HUE = 46920  # 65% of 65535
 YELLOW_HUE = 12750  # 19% of 65535
 MAX_SATURATION = 254
 MAX_BRIGHTNESS = 254
 
 # Timing constants (in seconds)
-MIN_PERIOD = 1.5
-MAX_PERIOD = 2.5
-MIN_FIRST_COLOR_REDUCTION = 0.0
-MAX_FIRST_COLOR_REDUCTION = 2.0
-
-# Connection pooling constants
-MAX_CONCURRENT_REQUESTS = 10
+MAX_FIRST_COLOR_REDUCTION = 2.0  # Maximum random offset for desynchronization
 
 
 class HueRandomizer:
