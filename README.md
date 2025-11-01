@@ -73,8 +73,6 @@ Perfect for game nights, dramatic entrances, or just having fun with your smart 
    ```env
    HUE_BRIDGE_HOST=your-bridge-hostname.local
    HUE_API_KEY=your-api-key-here
-   EFFECT_DURATION=10
-   TRANSITION_TIME=0
    ```
 
 ## Usage
@@ -120,14 +118,14 @@ cd /path/to/randomizer && poetry run python randomizer.py --zone "YOUR-ZONE-ID" 
 
 ## Configuration
 
-All configuration is managed through the `.env` file:
+Only two settings required in `.env`:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `HUE_BRIDGE_HOST` | Your Hue Bridge hostname | Required |
-| `HUE_API_KEY` | Your Hue Bridge API key | Required |
-| `EFFECT_DURATION` | Default duration in seconds | 10 |
-| `TRANSITION_TIME` | Color transition speed (0=instant) | 0 |
+| Variable | Description |
+|----------|-------------|
+| `HUE_BRIDGE_HOST` | Your Hue Bridge hostname (e.g., `whale-island.local`) |
+| `HUE_API_KEY` | Your Hue Bridge API key |
+
+All other settings (duration, brightness) are specified via CLI arguments.
 
 ## How It Works
 

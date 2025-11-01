@@ -15,10 +15,6 @@ class Config:
     HUE_BRIDGE_HOST = os.getenv('HUE_BRIDGE_HOST')
     HUE_API_KEY = os.getenv('HUE_API_KEY')
 
-    # Effect settings
-    EFFECT_DURATION = int(os.getenv('EFFECT_DURATION', 10))
-    TRANSITION_TIME = int(os.getenv('TRANSITION_TIME', 0))
-
     # API base URL (CLIP v2)
     @property
     def BASE_URL(self):
@@ -31,10 +27,6 @@ class Config:
             raise ValueError("HUE_BRIDGE_HOST not set in .env file")
         if not self.HUE_API_KEY:
             raise ValueError("HUE_API_KEY not set in .env file")
-        if self.EFFECT_DURATION <= 0:
-            raise ValueError("EFFECT_DURATION must be greater than 0")
-        if self.TRANSITION_TIME < 0:
-            raise ValueError("TRANSITION_TIME must be 0 or greater")
 
 
 # Global config instance

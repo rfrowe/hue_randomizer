@@ -102,7 +102,7 @@ class HueRandomizer:
         """Restore the original state of a light from CLIP v2 format."""
         restore_data = {
             "on": original_state.get('on', {}).get('on', True),
-            "transitiontime": config.TRANSITION_TIME
+            "transitiontime": 0  # Instant restore
         }
 
         # Restore brightness
@@ -123,7 +123,7 @@ class HueRandomizer:
 
         self.set_light_state(light_id, restore_data)
 
-    def control_light(self, light_id, duration, original_state, stop_event, effect_start_time, brightness=MAX_BRIGHTNESS):
+    def control_light(self, light_id, duration, original_state, stop_event, effect_start_time, brightness=MAX_BRIGHTNESS, transition_interval=2):
         """Control a single light with blue/yellow alternating pattern.
 
         Args:
@@ -133,9 +133,6 @@ class HueRandomizer:
             stop_event: Threading event to signal when to stop
             brightness: Brightness level (0-254, default 254)
         """
-        # Fixed period between color changes (2 seconds)
-        color_change_interval = 2.0
-
         # Random offset (0.1 - 2 seconds) for first yellow switch
         first_yellow_offset = random.uniform(0.1, MAX_FIRST_COLOR_REDUCTION)
 
@@ -149,11 +146,11 @@ class HueRandomizer:
             if (time.time() - effect_start_time) >= duration:
                 return
 
-            # Now alternate between yellow and blue every 2 seconds
+            # Now alternate between yellow and blue
             is_blue = False  # Start with yellow since we're already blue
 
             # Track when the next color change should happen
-            next_change_time = time.time() + color_change_interval
+            next_change_time = time.time() + transition_interval
 
             while (time.time() - effect_start_time) < duration and not stop_event.is_set():
                 # Set color
@@ -162,7 +159,7 @@ class HueRandomizer:
                     "hue": BLUE_HUE if is_blue else YELLOW_HUE,
                     "sat": MAX_SATURATION,
                     "bri": brightness,
-                    "transitiontime": config.TRANSITION_TIME
+                    "transitiontime": 0  # Instant color transitions
                 }
 
                 api_call_start = time.time()
@@ -178,7 +175,7 @@ class HueRandomizer:
 
                 # Wait until next_change_time, accounting for API call duration
                 wait_until = next_change_time
-                next_change_time = wait_until + color_change_interval
+                next_change_time = wait_until + transition_interval
 
                 time_to_wait = wait_until - time.time()
                 if time_to_wait > 0:
@@ -192,7 +189,7 @@ class HueRandomizer:
 
         # Don't restore here - let run_effect() handle batch restore at the end
 
-    def run_effect(self, group_id, duration=None, brightness=MAX_BRIGHTNESS, group_type=None, grouped_light_id_hint=None):
+    def run_effect(self, group_id, duration=None, brightness=MAX_BRIGHTNESS, group_type=None, grouped_light_id_hint=None, transition_interval=2):
         """Run the randomizer effect on a group.
 
         Args:
@@ -312,7 +309,7 @@ class HueRandomizer:
                 if light_id in original_states:
                     thread = threading.Thread(
                         target=self.control_light,
-                        args=(light_id, duration, original_states[light_id], stop_event, effect_start_time, brightness)
+                        args=(light_id, duration, original_states[light_id], stop_event, effect_start_time, brightness, transition_interval)
                     )
                     thread.daemon = False
                     thread.start()
@@ -382,7 +379,7 @@ class HueRandomizer:
                     restore_state = {
                         "on": {"on": first_on},
                         "dimming": {"brightness": first_brightness},
-                        "dynamics": {"duration": config.TRANSITION_TIME * 100}
+                        "dynamics": {"duration": 0}  # Instant restore
                     }
 
                     # Add color if available
@@ -461,6 +458,8 @@ def main():
                        help='Duration in seconds (default: from config)')
     parser.add_argument('--brightness', type=int, default=100,
                        help='Brightness percent 0-100 (default: 100)')
+    parser.add_argument('--transition', type=int, default=2,
+                       help='Color change interval in seconds (default: 2, minimum: 1)')
     parser.add_argument('--grouped-light', metavar='GROUPED_LIGHT_ID', dest='grouped_light_id',
                        help='Grouped light ID for batch operations (optional, auto-detected if not provided)')
     parser.add_argument('--list', action='store_true', help='List available groups and exit')
@@ -492,11 +491,14 @@ def main():
     else:
         parser.error("Must specify either --zone, --room, or --group")
 
-    # Parse brightness as percentage (0-100) and convert to 0-254
+    # Validate and parse arguments
+    if args.transition < 1:
+        parser.error("--transition must be at least 1 second")
+
     brightness = int((args.brightness / 100.0) * 254)
 
     # Run the effect with optional grouped_light_id hint
-    result = randomizer.run_effect(group_input, args.duration, brightness, group_type, args.grouped_light_id)
+    result = randomizer.run_effect(group_input, args.duration, brightness, group_type, args.grouped_light_id, args.transition)
 
     # Print result as JSON for Shortcuts integration
     print(json.dumps(result, indent=2))
